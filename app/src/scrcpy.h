@@ -41,6 +41,11 @@ struct sc_port_range {
     uint16_t last;
 };
 
+struct adb_device_id {
+    const char *serial;
+    const char *transport_id;
+};
+
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
 struct scrcpy_options {
