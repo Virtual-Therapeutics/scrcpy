@@ -108,7 +108,11 @@ adb_execute(struct adb_device_id id, const char *const adb_cmd[], size_t len) {
     int i;
     process_t process;
     cmd[0] = get_adb_command();
-    if (id.serial) {
+    if (id.transport) {
+        cmd[1] = "-t";
+        cmd[2] = id.transport;
+        i = 3;
+    } else if (id.serial) {
         cmd[1] = "-s";
         cmd[2] = id.serial;
         i = 3;
