@@ -59,6 +59,7 @@ static void test_options(void) {
         "--record-format", "mkv",
         "--render-expired-frames",
         "--serial", "0123456789abcdef",
+        // "--transport-id" is not compatible with "--serial"
         "--show-touches",
         "--turn-screen-off",
         "--prefer-text",
@@ -110,6 +111,7 @@ static void test_options2(void) {
         "scrcpy",
         "--no-control",
         "--no-display",
+        "--transport-id 1234",
         "--record", "file.mp4", // cannot enable --no-display without recording
     };
 
@@ -121,6 +123,7 @@ static void test_options2(void) {
     assert(!opts->display);
     assert(!strcmp(opts->record_filename, "file.mp4"));
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
+    assert(!strcmp(opts->id.transport, "1234"));
 }
 
 static void test_parse_shortcut_mods(void) {

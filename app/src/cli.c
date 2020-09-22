@@ -139,7 +139,8 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    -s, --serial serial\n"
         "        The device serial number. Mandatory only if several devices\n"
-        "        are connected to adb.\n"
+        "        are connected to adb and --transport-id is not specified.\n"
+        "        May not combine with --transport-id\n"
         "\n"
         "    --shortcut-mod key[+...]][,...]\n"
         "        Specify the modifiers to use for scrcpy shortcuts.\n"
@@ -161,6 +162,11 @@ scrcpy_print_usage(const char *arg0) {
         "        Enable \"show touches\" on start, restore the initial value\n"
         "        on exit.\n"
         "        It only shows physical touches (not clicks from scrcpy).\n"
+        "\n"
+        "    --transport-id id\n"
+        "        The device transport id. Mandatory only if several devices\n"
+        "        are connected to adb and --serial is not specified.\n"
+        "        May not combine with --serial\n"
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
@@ -651,6 +657,7 @@ guess_record_format(const char *filename) {
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
+#define OPT_TRANSPORT_ID           1023
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -687,6 +694,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"shortcut-mod",           required_argument, NULL, OPT_SHORTCUT_MOD},
         {"show-touches",           no_argument,       NULL, 't'},
         {"stay-awake",             no_argument,       NULL, 'w'},
+        {"transport-id",           required_argument, NULL, OPT_TRANSPORT_ID},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
         {"verbosity",              required_argument, NULL, 'V'},
         {"version",                no_argument,       NULL, 'v'},
@@ -856,6 +864,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                     return false;
                 }
                 break;
+            case OPT_TRANSPORT_ID:
+                opts->id.transport = optarg;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -894,6 +905,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
 
     if (!opts->control && opts->stay_awake) {
         LOGE("Could not request to stay awake if control is disabled");
+        return false;
+    }
+
+    if (opts->id.serial && opts->id.transport) {
+        LOGE("Specify only one of --serial or --transport-id to identify the server device");
         return false;
     }
 
