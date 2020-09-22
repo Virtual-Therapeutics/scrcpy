@@ -103,14 +103,14 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
 }
 
 process_t
-adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
+adb_execute(struct adb_device_id id, const char *const adb_cmd[], size_t len) {
     const char *cmd[len + 4];
     int i;
     process_t process;
     cmd[0] = get_adb_command();
-    if (serial) {
+    if (id.serial) {
         cmd[1] = "-s";
-        cmd[2] = serial;
+        cmd[2] = id.serial;
         i = 3;
     } else {
         i = 1;
@@ -127,45 +127,45 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
 }
 
 process_t
-adb_forward(const char *serial, uint16_t local_port,
+adb_forward(struct adb_device_id id, uint16_t local_port,
             const char *device_socket_name) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"forward", local, remote};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return adb_execute(id, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
 process_t
-adb_forward_remove(const char *serial, uint16_t local_port) {
+adb_forward_remove(struct adb_device_id id, uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     sprintf(local, "tcp:%" PRIu16, local_port);
     const char *const adb_cmd[] = {"forward", "--remove", local};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return adb_execute(id, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
 process_t
-adb_reverse(const char *serial, const char *device_socket_name,
+adb_reverse(struct adb_device_id id, const char *device_socket_name,
             uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"reverse", remote, local};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return adb_execute(id, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
 process_t
-adb_reverse_remove(const char *serial, const char *device_socket_name) {
+adb_reverse_remove(struct adb_device_id id, const char *device_socket_name) {
     char remote[108 + 14 + 1]; // localabstract:NAME
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"reverse", "--remove", remote};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return adb_execute(id, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
 process_t
-adb_push(const char *serial, const char *local, const char *remote) {
+adb_push(struct adb_device_id id, const char *local, const char *remote) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the paths must be quoted
     // (see sys/win/command.c)
@@ -181,7 +181,7 @@ adb_push(const char *serial, const char *local, const char *remote) {
 #endif
 
     const char *const adb_cmd[] = {"push", local, remote};
-    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    process_t proc = adb_execute(id, adb_cmd, ARRAY_LEN(adb_cmd));
 
 #ifdef __WINDOWS__
     SDL_free((void *) remote);
@@ -192,7 +192,7 @@ adb_push(const char *serial, const char *local, const char *remote) {
 }
 
 process_t
-adb_install(const char *serial, const char *local) {
+adb_install(struct adb_device_id id, const char *local) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the local name must be quoted
     // (see sys/win/command.c)
@@ -203,7 +203,7 @@ adb_install(const char *serial, const char *local) {
 #endif
 
     const char *const adb_cmd[] = {"install", "-r", local};
-    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    process_t proc = adb_execute(id, adb_cmd, ARRAY_LEN(adb_cmd));
 
 #ifdef __WINDOWS__
     SDL_free((void *) local);

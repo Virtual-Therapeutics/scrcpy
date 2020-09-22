@@ -16,7 +16,7 @@ file_handler_request_destroy(struct file_handler_request *req) {
 }
 
 bool
-file_handler_init(struct file_handler *file_handler, const char *serial,
+file_handler_init(struct file_handler *file_handler, struct adb_device_id id,
                   const char *push_target) {
 
     cbuf_init(&file_handler->queue);
@@ -30,17 +30,30 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
         return false;
     }
 
-    if (serial) {
-        file_handler->serial = SDL_strdup(serial);
-        if (!file_handler->serial) {
+    if (id.serial) {
+        file_handler->id.serial = SDL_strdup(id.serial);
+        if (!file_handler->id.serial) {
             LOGW("Could not strdup serial");
             SDL_DestroyCond(file_handler->event_cond);
             SDL_DestroyMutex(file_handler->mutex);
             return false;
         }
     } else {
-        file_handler->serial = NULL;
+        file_handler->id.serial = NULL;
     }
+
+    if (id.transport) {
+        file_handler->id.transport = SDL_strdup(id.transport);
+        if (!file_handler->id.transport) {
+            LOGW("Could not strdup transport");
+            SDL_DestroyCond(file_handler->event_cond);
+            SDL_DestroyMutex(file_handler->mutex);
+            return false;
+        }
+    } else {
+        file_handler->id.transport = NULL;
+    }
+
 
     // lazy initialization
     file_handler->initialized = false;
@@ -57,7 +70,8 @@ void
 file_handler_destroy(struct file_handler *file_handler) {
     SDL_DestroyCond(file_handler->event_cond);
     SDL_DestroyMutex(file_handler->mutex);
-    SDL_free(file_handler->serial);
+    SDL_free(file_handler->id.serial);
+    SDL_free(file_handler->id.transport);
 
     struct file_handler_request req;
     while (cbuf_take(&file_handler->queue, &req)) {
@@ -66,13 +80,13 @@ file_handler_destroy(struct file_handler *file_handler) {
 }
 
 static process_t
-install_apk(const char *serial, const char *file) {
-    return adb_install(serial, file);
+install_apk(struct adb_device_id id, const char *file) {
+    return adb_install(id, file);
 }
 
 static process_t
-push_file(const char *serial, const char *file, const char *push_target) {
-    return adb_push(serial, file, push_target);
+push_file(struct adb_device_id id, const char *file, const char *push_target) {
+    return adb_push(id, file, push_target);
 }
 
 bool
@@ -126,10 +140,10 @@ run_file_handler(void *data) {
         process_t process;
         if (req.action == ACTION_INSTALL_APK) {
             LOGI("Installing %s...", req.file);
-            process = install_apk(file_handler->serial, req.file);
+            process = install_apk(file_handler->id, req.file);
         } else {
             LOGI("Pushing %s...", req.file);
-            process = push_file(file_handler->serial, req.file,
+            process = push_file(file_handler->id, req.file,
                                 file_handler->push_target);
         }
         file_handler->current_process = process;

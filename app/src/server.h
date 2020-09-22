@@ -14,7 +14,7 @@
 #include "util/net.h"
 
 struct server {
-    char *serial;
+    struct adb_device_id id;
     process_t process;
     SDL_Thread *wait_server_thread;
     atomic_flag server_socket_closed;
@@ -28,7 +28,10 @@ struct server {
 };
 
 #define SERVER_INITIALIZER { \
-    .serial = NULL, \
+    .id = { \
+        .serial = NULL, \
+        .transport = NULL, \
+    }, \
     .process = PROCESS_NONE, \
     .wait_server_thread = NULL, \
     .server_socket_closed = ATOMIC_FLAG_INIT, \
@@ -66,7 +69,7 @@ server_init(struct server *server);
 
 // push, enable tunnel et start the server
 bool
-server_start(struct server *server, const char *serial,
+server_start(struct server *server, struct adb_device_id id,
              const struct server_params *params);
 
 // block until the communication with the server is established

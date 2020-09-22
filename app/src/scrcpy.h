@@ -42,14 +42,14 @@ struct sc_port_range {
 };
 
 struct adb_device_id {
-    const char *serial;
-    const char *transport_id;
+    char *serial;
+    char *transport;
 };
 
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
 struct scrcpy_options {
-    const char *serial;
+    struct adb_device_id id;
     const char *crop;
     const char *record_filename;
     const char *window_title;
@@ -87,7 +87,10 @@ struct scrcpy_options {
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
-    .serial = NULL, \
+    .id = { \
+        .serial = NULL, \
+        .transport = NULL, \
+    }, \
     .crop = NULL, \
     .record_filename = NULL, \
     .window_title = NULL, \

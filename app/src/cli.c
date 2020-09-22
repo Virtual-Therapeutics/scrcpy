@@ -768,7 +768,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->record_filename = optarg;
                 break;
             case 's':
-                opts->serial = optarg;
+                opts->id.serial = optarg;
                 break;
             case 'S':
                 opts->turn_screen_off = true;

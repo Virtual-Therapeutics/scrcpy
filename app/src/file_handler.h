@@ -22,7 +22,7 @@ struct file_handler_request {
 struct file_handler_request_queue CBUF(struct file_handler_request, 16);
 
 struct file_handler {
-    char *serial;
+    struct adb_device_id id;
     const char *push_target;
     SDL_Thread *thread;
     SDL_mutex *mutex;
@@ -34,7 +34,7 @@ struct file_handler {
 };
 
 bool
-file_handler_init(struct file_handler *file_handler, const char *serial,
+file_handler_init(struct file_handler *file_handler, struct adb_device_id id,
                   const char *push_target);
 
 void

@@ -320,7 +320,7 @@ scrcpy(const struct scrcpy_options *options) {
         .codec_options = options->codec_options,
         .force_adb_forward = options->force_adb_forward,
     };
-    if (!server_start(&server, options->serial, &params)) {
+    if (!server_start(&server, options->id, &params)) {
         return false;
     }
 
@@ -367,7 +367,7 @@ scrcpy(const struct scrcpy_options *options) {
         video_buffer_initialized = true;
 
         if (options->control) {
-            if (!file_handler_init(&file_handler, server.serial,
+            if (!file_handler_init(&file_handler, server.id,
                                    options->push_target)) {
                 goto end;
             }

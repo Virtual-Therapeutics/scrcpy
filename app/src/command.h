@@ -36,12 +36,14 @@
 #endif
 
 #include "config.h"
+#include "scrcpy.h"
 
 enum process_result {
     PROCESS_SUCCESS,
     PROCESS_ERROR_GENERIC,
     PROCESS_ERROR_MISSING_BINARY,
 };
+
 
 #ifndef __WINDOWS__
 bool
@@ -58,27 +60,27 @@ bool
 cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
 process_t
-adb_execute(const char *serial, const char *const adb_cmd[], size_t len);
+adb_execute(struct adb_device_id id, const char *const adb_cmd[], size_t len);
 
 process_t
-adb_forward(const char *serial, uint16_t local_port,
+adb_forward(struct adb_device_id id, uint16_t local_port,
             const char *device_socket_name);
 
 process_t
-adb_forward_remove(const char *serial, uint16_t local_port);
+adb_forward_remove(struct adb_device_id id, uint16_t local_port);
 
 process_t
-adb_reverse(const char *serial, const char *device_socket_name,
+adb_reverse(struct adb_device_id id, const char *device_socket_name,
             uint16_t local_port);
 
 process_t
-adb_reverse_remove(const char *serial, const char *device_socket_name);
+adb_reverse_remove(struct adb_device_id id, const char *device_socket_name);
 
 process_t
-adb_push(const char *serial, const char *local, const char *remote);
+adb_push(struct adb_device_id id, const char *local, const char *remote);
 
 process_t
-adb_install(const char *serial, const char *local);
+adb_install(struct adb_device_id id, const char *local);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name

@@ -88,7 +88,7 @@ get_server_path(void) {
 }
 
 static bool
-push_server(const char *serial) {
+push_server(struct adb_device_id id) {
     char *server_path = get_server_path();
     if (!server_path) {
         return false;
@@ -98,41 +98,41 @@ push_server(const char *serial) {
         SDL_free(server_path);
         return false;
     }
-    process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
+    process_t process = adb_push(id, server_path, DEVICE_SERVER_PATH);
     SDL_free(server_path);
     return process_check_success(process, "adb push");
 }
 
 static bool
-enable_tunnel_reverse(const char *serial, uint16_t local_port) {
-    process_t process = adb_reverse(serial, SOCKET_NAME, local_port);
+enable_tunnel_reverse(struct adb_device_id id, uint16_t local_port) {
+    process_t process = adb_reverse(id, SOCKET_NAME, local_port);
     return process_check_success(process, "adb reverse");
 }
 
 static bool
-disable_tunnel_reverse(const char *serial) {
-    process_t process = adb_reverse_remove(serial, SOCKET_NAME);
+disable_tunnel_reverse(struct adb_device_id id) {
+    process_t process = adb_reverse_remove(id, SOCKET_NAME);
     return process_check_success(process, "adb reverse --remove");
 }
 
 static bool
-enable_tunnel_forward(const char *serial, uint16_t local_port) {
-    process_t process = adb_forward(serial, local_port, SOCKET_NAME);
+enable_tunnel_forward(struct adb_device_id id, uint16_t local_port) {
+    process_t process = adb_forward(id, local_port, SOCKET_NAME);
     return process_check_success(process, "adb forward");
 }
 
 static bool
-disable_tunnel_forward(const char *serial, uint16_t local_port) {
-    process_t process = adb_forward_remove(serial, local_port);
+disable_tunnel_forward(struct adb_device_id id, uint16_t local_port) {
+    process_t process = adb_forward_remove(id, local_port);
     return process_check_success(process, "adb forward --remove");
 }
 
 static bool
 disable_tunnel(struct server *server) {
     if (server->tunnel_forward) {
-        return disable_tunnel_forward(server->serial, server->local_port);
+        return disable_tunnel_forward(server->id, server->local_port);
     }
-    return disable_tunnel_reverse(server->serial);
+    return disable_tunnel_reverse(server->id);
 }
 
 static socket_t
@@ -146,7 +146,7 @@ enable_tunnel_reverse_any_port(struct server *server,
                                struct sc_port_range port_range) {
     uint16_t port = port_range.first;
     for (;;) {
-        if (!enable_tunnel_reverse(server->serial, port)) {
+        if (!enable_tunnel_reverse(server->id, port)) {
             // the command itself failed, it will fail on any port
             return false;
         }
@@ -165,7 +165,7 @@ enable_tunnel_reverse_any_port(struct server *server,
         }
 
         // failure, disable tunnel and try another port
-        if (!disable_tunnel_reverse(server->serial)) {
+        if (!disable_tunnel_reverse(server->id)) {
             LOGW("Could not remove reverse tunnel on port %" PRIu16, port);
         }
 
@@ -193,7 +193,7 @@ enable_tunnel_forward_any_port(struct server *server,
     server->tunnel_forward = true;
     uint16_t port = port_range.first;
     for (;;) {
-        if (enable_tunnel_forward(server->serial, port)) {
+        if (enable_tunnel_forward(server->id, port)) {
             // success
             server->local_port = port;
             return true;
@@ -306,7 +306,7 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    return adb_execute(server->id, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
 
 static socket_t
@@ -374,18 +374,25 @@ run_wait_server(void *data) {
 }
 
 bool
-server_start(struct server *server, const char *serial,
+server_start(struct server *server, struct adb_device_id id,
              const struct server_params *params) {
     server->port_range = params->port_range;
 
-    if (serial) {
-        server->serial = SDL_strdup(serial);
-        if (!server->serial) {
+    if (id.serial) {
+        server->id.serial = SDL_strdup(id.serial);
+        if (!server->id.serial) {
             return false;
         }
     }
 
-    if (!push_server(serial)) {
+    if (id.transport) {
+        server->id.transport = SDL_strdup(id.transport);
+        if (!server->id.transport) {
+            return false;
+        }
+    }
+
+    if (!push_server(id)) {
         goto error1;
     }
 
@@ -429,7 +436,8 @@ error2:
     }
     disable_tunnel(server);
 error1:
-    SDL_free(server->serial);
+    SDL_free(server->id.serial);
+    SDL_free(server->id.transport);
     return false;
 }
 
@@ -504,5 +512,6 @@ server_stop(struct server *server) {
 
 void
 server_destroy(struct server *server) {
-    SDL_free(server->serial);
+    SDL_free(server->id.serial);
+    SDL_free(server->id.transport);
 }
